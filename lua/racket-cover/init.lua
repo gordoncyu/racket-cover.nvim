@@ -10,7 +10,7 @@ local script_dir = nil
 local uncovered = nil
 local show_uncovered = false
 
-local uncovered_hl_space = nil
+local uncovered_namespace = nil
 local racket_cover_aug = nil
 
 local do_highlight_uncovered = nil
@@ -41,14 +41,15 @@ local function construct_uncovered(json_str)
     return uncov
 end
 
-local function clear_uncovered_hl(bufnr)
-    vim.api.nvim_buf_clear_namespace(bufnr, uncovered_hl_space, 0, -1)
+local function clear_uncovered_hl_diag(bufnr)
+    vim.api.nvim_buf_clear_namespace(bufnr, uncovered_namespace, 0, -1)
+    vim.diagnostic.reset(uncovered_namespace, bufnr)
 end
 
-local function clear_uncovered_hl_all()
+local function clear_uncovered_hl_diag_all()
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
         if vim.fn.buflisted(bufnr) == 1 then
-            clear_uncovered_hl(bufnr)
+            clear_uncovered_hl_diag(bufnr)
         end
     end
 end
@@ -120,12 +121,12 @@ local function highlight_uncovered(bufnr)
                         message = "not covered by tests",
                         source = "Racket Code Coverage",
                         code = uncov_line:sub(uncov_part.col, uncov_part.col + uncov_part.length),
-                        namespace = uncovered_hl_space,
+                        namespace = uncovered_namespace,
                     })
                 end
 
                 if do_highlight_uncovered then
-                    vim.api.nvim_buf_add_highlight(bufnr, uncovered_hl_space, "racketUncovered", api_line, api_col, api_col_end)
+                    vim.api.nvim_buf_add_highlight(bufnr, uncovered_namespace, "racketUncovered", api_line, api_col, api_col_end)
                 end
 
                 last_match_line = cur_line
@@ -136,7 +137,7 @@ local function highlight_uncovered(bufnr)
     end
 
     if do_diagnostic_uncovered then
-        vim.diagnostic.set(uncovered_hl_space, bufnr, buf_diagnostics)
+        vim.diagnostic.set(uncovered_namespace, bufnr, buf_diagnostics)
     end
 end
 
@@ -145,7 +146,7 @@ local function highlight_uncovered_all()
         return
     end
 
-    clear_uncovered_hl_all()
+    clear_uncovered_hl_diag_all()
 
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
         highlight_uncovered(bufnr)
@@ -173,7 +174,7 @@ local function set_show_uncovered(val)
 
                 if show_uncovered then
                     os.execute("touch ~/temp/isracketandshowuncovered.txt")
-                    clear_uncovered_hl(event.buf)
+                    clear_uncovered_hl_diag(event.buf)
                     highlight_uncovered(event.buf)
                 end
             end
@@ -188,7 +189,7 @@ local function set_show_uncovered(val)
                 end
 
                 if show_uncovered then
-                    clear_uncovered_hl(event.buf)
+                    clear_uncovered_hl_diag(event.buf)
                     highlight_uncovered(event.buf)
                 end
             end
@@ -203,13 +204,13 @@ local function set_show_uncovered(val)
                 end
 
                 if show_uncovered then
-                    clear_uncovered_hl(event.buf)
+                    clear_uncovered_hl_diag(event.buf)
                     highlight_uncovered(event.buf)
                 end
             end
         })
     else
-        clear_uncovered_hl_all()
+        clear_uncovered_hl_diag_all()
         vim.api.nvim_clear_autocmds({ group = racket_cover_aug })
     end
 end
@@ -336,7 +337,7 @@ function M.setup(opts)
 
     coverage_dir = util.path_join(opts.coverage_dir, string.gsub(vim.fn.getcwd(), "/", "%%"))
 
-    uncovered_hl_space = vim.api.nvim_create_namespace("racketUncovered")
+    uncovered_namespace = vim.api.nvim_create_namespace("racketUncovered")
 
     vim.api.nvim_set_hl(0, "racketUncovered", opts.highlight_group)
 
