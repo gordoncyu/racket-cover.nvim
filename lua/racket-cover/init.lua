@@ -218,16 +218,16 @@ local function set_show_uncovered(val)
     end
 end
 
-local function rktl_to_json_str(rktl_file)
+local function convert_racket_cover_raw_output(raw_output_file)
     if script_dir == nil then
         script_dir = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:p")
     end
 
-    local conversion_command = "racket " .. script_dir .. "/racket-cover-convert-rktl.rkt " .. rktl_file
+    local conversion_command = "racket " .. script_dir .. "/convert-racket-cover-raw-output.rkt " .. raw_output_file
     local handle = io.popen(conversion_command)
 
     if not handle then
-        error("Failed to execute rktl to json command: " .. conversion_command)
+        error("Failed to execute raw output conversion command: " .. conversion_command)
     end
 
     local output = handle:read("*a")
@@ -298,7 +298,7 @@ local function create_user_commands()
 
             print("Running coverage complete")
 
-            local convert_output = rktl_to_json_str(coverage_dir .. "/coverage.rktl")
+            local convert_output = convert_racket_cover_raw_output(coverage_dir .. "/coverage.rktl")
             util.write_to_file(coverage_dir .. "/uncovered.json", convert_output)
             uncovered = construct_uncovered(convert_output)
             if vim.bo.filetype == "racket" then
