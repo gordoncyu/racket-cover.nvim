@@ -75,10 +75,6 @@ end
 local function highlight_uncovered(bufnr)
     local buf_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p")
 
-    if uncovered == nil then
-        uncovered = construct_uncovered(util.read_from_file(coverage_dir .. "/uncovered.json"))
-    end
-
     if not uncovered["files"][buf_path] then
         return
     end
@@ -151,6 +147,19 @@ local function set_show_uncovered(val)
     show_uncovered = val
 
     if show_uncovered then
+        if uncovered == nil then
+            uncovered = construct_uncovered(util.read_from_file(coverage_dir .. "/uncovered.json"))
+        end
+
+        local num_expr = uncovered["num_expr"]
+        local num_cov = uncovered["num_cov"]
+        print("Total Expression Coverage: " .. num_cov / num_expr * 100 .. "% (" .. num_cov .. "/" .. num_expr .. ")")
+        for filepath, fileinfo in pairs(uncovered["files"]) do
+            num_expr = fileinfo["num_expr"]
+            num_cov = fileinfo["num_cov"]
+            print("Coverage for " .. vim.fn.fnamemodify(filepath, ":.") .. ": " .. num_cov / num_expr * 100 .. "% (" .. num_cov .. "/" .. num_expr .. ")")
+        end
+
         highlight_uncovered_all()
 
         vim.api.nvim_clear_autocmds({ group = racket_cover_aug })
@@ -242,8 +251,8 @@ local function create_user_commands()
 
     vim.api.nvim_create_user_command(
         'RacketCoverToggle', function ()
+            print("Racket Coverage " .. (not show_uncovered and "On" or "Off"))
             set_show_uncovered(not show_uncovered)
-            print("Racket Coverage " .. (show_uncovered and "On" or "Off"))
         end, { nargs = 0 }
     )
 
