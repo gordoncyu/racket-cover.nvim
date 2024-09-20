@@ -4,7 +4,7 @@ Shows code coverage for Racket and derived languages in Neovim
 # Dependencies
 `racket`, obviously
 # Installation
-Simply add `gordoncyu/racket-cover.nvim` to your favorite package manner. I use packer which looks like:
+Simply add `gordoncyu/racket-cover.nvim` to your favorite package manager. I use packer which looks like:
 ```lua
 return packer.startup {
     function(use)
