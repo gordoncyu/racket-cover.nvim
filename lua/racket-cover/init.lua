@@ -335,7 +335,7 @@ function M.setup(opts)
     do_highlight_uncovered = opts.highlight_uncovered
     do_diagnostic_uncovered = opts.highlight_uncovered
 
-    coverage_dir = util.path_join(opts.coverage_dir, string.gsub(vim.fn.getcwd(), "/", "%%"))
+    coverage_dir = util.path_join(opts.coverage_dir, '' .. string.gsub(vim.fn.getcwd(), "/", "%%"))
 
     uncovered_namespace = vim.api.nvim_create_namespace("racketUncovered")
 
