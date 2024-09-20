@@ -17,23 +17,17 @@ local do_highlight_uncovered = nil
 local do_diagnostic_uncovered = nil
 
 local function construct_uncovered(json_str)
-    local uncov = {}
-    local uncovered_parts = vim.json.decode(json_str)
+    local uncov = vim.json.decode(json_str)
     local file_to_key_file = {}
-    for _, part in ipairs(uncovered_parts) do
-        if not uncov[part.filepath] then
-            uncov[part.filepath] = {}
+    for filepath, uncov_info in pairs(uncov["files"]) do
+        for _, part in ipairs(uncov_info["uncovered"]) do
+            if not file_to_key_file[filepath] then
+                file_to_key_file[filepath] = coverage_dir .. "/" .. string.gsub(filepath, "/", "%%")
+            end
+            part.line = util.byte2line(file_to_key_file[filepath], part.offset)
+            part.col = part.offset - util.line2byte(file_to_key_file[filepath], part.line) + 1
         end
-        if not file_to_key_file[part.filepath] then
-            file_to_key_file[part.filepath] = coverage_dir .. "/" .. string.gsub(part.filepath, "/", "%%")
-        end
-        local line = util.byte2line(file_to_key_file[part.filepath], part.offset)
-        local col = part.offset - util.line2byte(file_to_key_file[part.filepath], line) + 1
-        table.insert(uncov[part.filepath], {line=line, col=col, length=part.length, offset=part.offset})
-    end
-
-    for _, file_uncov in pairs(uncov) do
-        table.sort(file_uncov, function(a, b)
+        table.sort(uncov_info["uncovered"], function(a, b)
             return a.line < b.line
         end)
     end
@@ -85,7 +79,7 @@ local function highlight_uncovered(bufnr)
         uncovered = construct_uncovered(util.read_from_file(coverage_dir .. "/uncovered.json"))
     end
 
-    if not uncovered[buf_path] then
+    if not uncovered["files"][buf_path] then
         return
     end
 
@@ -95,7 +89,7 @@ local function highlight_uncovered(bufnr)
         return
     end
 
-    local file_uncov = uncovered[buf_path]
+    local file_uncov = uncovered["files"][buf_path]["uncovered"]
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
     local parallel_lines = vim.fn.split(util.read_from_file(parallel_filepath), "\n")
 
