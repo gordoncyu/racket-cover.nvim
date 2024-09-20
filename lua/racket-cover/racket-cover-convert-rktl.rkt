@@ -7,6 +7,33 @@
          syntax/modread
          syntax/stx)
 
+(define (string-last-index-of hay needle)
+  (define n (string-length needle))
+  (define h (string-length hay))
+  (if (> n h)
+      (void)
+      (for/first ([i (in-range (- h n) -1 -1)]
+                  #:when (string=? (substring hay i (+ i n)) needle)) ; Iterate from (h-n) downto 0
+        i)))
+
+(define (directory-name path)
+  ;; Step 1: Trim trailing slashes unless the path is root "/"
+  (define trimmed-path
+    (let loop ([p path])
+      (cond
+        [(and (string-suffix? "/" p) (not (string=? p "/")))
+         (loop (substring p 0 (sub1 (string-length p))))]
+        [else p])))
+  
+  ;; Step 2: Find the index of the last slash
+  (define last-slash (string-last-index-of trimmed-path "/"))
+
+  ;; Step 3: Determine the directory part based on the last slash position
+  (cond
+    [(not last-slash) "."]
+    [(= last-slash 0) "/"]
+    [else (substring trimmed-path 0 last-slash)]))
+
 ;; Read the data from the `.rktl` file
 (define (read-this-from-file file-path)
   (with-input-from-file file-path
@@ -88,8 +115,13 @@
     ;; Define covered? function
     (define covered? (make-covered?-function uncovered-ranges))
 
+    (define key-file
+      (build-path
+       (directory-name file-path)
+       (string-replace file "/" "%")))
+
     ;; Compute expression coverage
-    (define expr-info (expression-coverage-file file covered?))
+    (define expr-info (expression-coverage-file key-file covered?))
     (define num-covered (first expr-info))
     (define num-expressions (second expr-info))
 
