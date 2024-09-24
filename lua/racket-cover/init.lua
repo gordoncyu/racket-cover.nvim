@@ -98,7 +98,7 @@ local function highlight_uncovered(bufnr)
             if lines[cur_line] == uncov_line and proceeding_indented_identical(parallel_lines, lines, uncov_part.line, cur_line) then
                 local api_line = cur_line - 1
                 local api_col = uncov_part.col - 1
-                local api_col_end = uncov_part.col + uncov_part.length
+                local api_col_end = uncov_part.col + uncov_part.length - 1
 
                 if do_diagnostic_uncovered then
                     table.insert(buf_diagnostics, {
